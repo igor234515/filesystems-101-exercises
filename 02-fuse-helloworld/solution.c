@@ -30,6 +30,7 @@ static int _getattr(const char *path, struct stat *st, struct fuse_file_info *in
 static int _readdir(const char *path, void *data, fuse_fill_dir_t filler,
            off_t off, struct fuse_file_info *info, enum fuse_readdir_flags frf)
 {
+	(void)path;
 	(void)off; 
 	(void)info; 
 	(void)frf;
