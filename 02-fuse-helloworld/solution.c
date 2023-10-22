@@ -1,10 +1,10 @@
 #include <solution.h>
-#include <fuse.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-
+#include <fuse.h>
 static int _getattr(const char *path, struct stat *st, struct fuse_file_info *info) 
 {
 
@@ -17,7 +17,7 @@ static int _getattr(const char *path, struct stat *st, struct fuse_file_info *in
 	}
 	 else if (strcmp(path, "/hello") == 0) 
 	 {
-		st->st_mode = S_IFREG | 0400;
+		st->st_mode = S_IFREG | 0444;
 		st->st_nlink = 1;
 		st->st_size = 64;
 	} 
