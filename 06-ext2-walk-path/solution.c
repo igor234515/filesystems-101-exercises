@@ -1,6 +1,5 @@
 #include <solution.h>
 #include <ext2fs/ext2fs.h>
-#include <fuse.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -29,7 +28,7 @@ int block_Read(int img, int out, size_t blk, size_t blk_size, size_t _part) {
 }
 
 int inode_Read(int img, struct ext2_inode* inode, int inode_number, struct ext2_super_block* SB) {
-    /* Once the blk is identified, the local inode index for the local inode table can be identified using: */
+    
     size_t inode_index = (inode_number - 1) % SB->s_inodes_per_group;
     size_t desc_index = (inode_number - 1) / SB->s_inodes_per_group;
     
@@ -306,7 +305,7 @@ int copy_file(int img, int out, struct ext2_super_block* SB, int inode_number, s
     }
     
     free(double_blk);
-	
+
     return 0;
 }
 
