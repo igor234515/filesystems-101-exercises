@@ -306,6 +306,7 @@ int copy_file(int img, int out, struct ext2_super_block* SB, int inode_number, s
     }
     
     free(double_blk);
+	
     return 0;
 }
 
