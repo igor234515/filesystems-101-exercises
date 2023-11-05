@@ -254,6 +254,7 @@ static int _mknod(const char *path, mode_t mode, dev_t dev) {
     return -EROFS;
 }
 static int _getattr(const char *path, struct stat *stat, struct fuse_file_info *info) {
+	(void)info;
 	int status;
     size_t stat_size = sizeof(struct stat);
     memset(stat, 0, stat_size);
