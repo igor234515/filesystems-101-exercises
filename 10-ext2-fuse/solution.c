@@ -204,8 +204,9 @@ int Read;
 int ext2_Img;
 struct ext2_super_block ext2_SB;
 
-void *init_(struct fuse_conn_info *conn_info) {
+void *init_(struct fuse_conn_info *conn_info, struct fuse_config *config) {
     (void)conn_info;
+	(void)config;
     return NULL;
 }
 static int _create(const char *path, mode_t mode, struct fuse_file_info *info) {
@@ -252,7 +253,7 @@ static int _mknod(const char *path, mode_t mode, dev_t dev) {
     (void)dev;
     return -EROFS;
 }
-static int _getattr(const char *path, struct stat *stat) {
+static int _getattr(const char *path, struct stat *stat, struct fuse_file_info *info) {
 	int status;
     size_t stat_size = sizeof(struct stat);
     memset(stat, 0, stat_size);
