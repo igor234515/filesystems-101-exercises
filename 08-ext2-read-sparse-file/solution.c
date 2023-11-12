@@ -102,11 +102,10 @@ int copy_file(int img, int out, struct ext2_super_block *SB, int inode_number)
 	}
 
 	_part = 0;
-	uint32_t *blk = malloc(blk_size);
+	uint32_t blk[blk_size];
 	status = pread(img, blk, blk_size, blk_size * inode.i_block[EXT2_IND_BLOCK]);
 	if (status < 0)
 	{
-		free(blk);
 		return -errno;
 	}
 
