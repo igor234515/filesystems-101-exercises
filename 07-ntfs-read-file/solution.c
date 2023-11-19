@@ -60,7 +60,7 @@ int dump_file(int img, const char *path, int out)
 		{
 			break;
 		}
-		int write_status = write(out, buffer, status);
+		int write_status = pwrite(out, buffer, status);
 		if (write_status < 0)
 		{
 			free(buffer);
