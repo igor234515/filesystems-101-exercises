@@ -60,7 +60,8 @@ int dump_file(int img, const char *path, int out)
 		{
 			break;
 		}
-		int write_status = pwrite(out, buffer, status);
+
+		int write_status = pwrite(out, buffer, status, 0);
 		if (write_status < 0)
 		{
 			free(buffer);
@@ -75,7 +76,7 @@ int dump_file(int img, const char *path, int out)
 	return 0;
 }
 
-//#include <../../ntfs/include/ntfs-3g/dir.h>
+// #include <../../ntfs/include/ntfs-3g/dir.h>
 #include <ntfs-3g/dir.h>
 ntfs_inode *ntfs_pathName_to_Inode(ntfs_volume *volume, ntfs_inode *parent_inode,
 								   const char *pathName)
