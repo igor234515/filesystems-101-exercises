@@ -18,7 +18,7 @@ ntfs_inode *ntfs_pathName_to_Inode(ntfs_volume *volume, ntfs_inode *parent_inode
 int dump_file(int img, const char *path, int out)
 {
 	char path_to_FS[PATH_MAX];
-	sprintf(path_to_FS, "/proc/self/fd/%d", img);
+	snprintf(path_to_FS, PATH_MAX, "/proc/self/fd/%d", img);
 	char *filename = calloc(1, NAME_MAX);
 	int status = readlink(path_to_FS, filename, NAME_MAX);
 	free(filename);
