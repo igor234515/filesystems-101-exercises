@@ -5,18 +5,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-
+#define envSIZE 128
+struct processInfo
+{
+    char *exe;
+    char **argv;
+    char **envp;
+    pid_t pid;
+    size_t argv_length;
+    size_t envp_length;
+};
+static int readCmdLine(struct processInfo *processInfo);
+static int readEnviron(struct processInfo *processInfo);
+static int readExe(struct processInfo *processInfo);
+static int getProcessInfo(struct processInfo *processInfo);
+static int cleanProcessInfo(struct processInfo *processInfo);
+static int isProcess(struct dirent *_proc_entry);
 void ps(void)
 {
     /* implement me */
 
     DIR *proc;
-	
+
     struct dirent *proc_entr;
 
     proc = opendir("/proc");
-    
+
     if (!proc)
     {
         report_error("/proc", errno);
@@ -24,29 +38,26 @@ void ps(void)
     };
 
     struct processInfo *processInfo = (struct processInfo *)calloc(1, sizeof(struct processInfo));
-    
+
     while ((proc_entr = readdir(proc)) != NULL)
     {
 
         if (!(processInfo->pid = isProcess(proc_entr)))
         {
             continue;
-        } 
+        }
 
         int err = getProcessInfo(processInfo);
-        if (!err) 
+        if (!err)
         {
-        report_process(processInfo->pid, processInfo->exe, processInfo->argv, processInfo->envp);
+            report_process(processInfo->pid, processInfo->exe, processInfo->argv, processInfo->envp);
         }
         cleanProcessInfo(processInfo);
     };
 
-
     free(processInfo);
     closedir(proc);
 }
-
-
 
 int readEnviron(struct processInfo *processInfo)
 {
@@ -76,7 +87,8 @@ int readEnviron(struct processInfo *processInfo)
                 processInfo->envp[i] = NULL;
                 break;
             }
-            if (processInfo->envp[i][0] == '\0') {
+            if (processInfo->envp[i][0] == '\0')
+            {
                 free(processInfo->envp[i]);
                 processInfo->envp[i] = NULL;
                 break;
@@ -121,7 +133,7 @@ int readCmdLine(struct processInfo *processInfo)
                 processInfo->argv[i] = NULL;
                 break;
             }
-            if (processInfo->argv[i][0] == '\0') 
+            if (processInfo->argv[i][0] == '\0')
             {
                 free(processInfo->argv[i]);
                 processInfo->argv[i] = NULL;
@@ -146,7 +158,7 @@ int readExe(struct processInfo *processInfo)
 
     sprintf(pathName, "/proc/%d/exe", processInfo->pid);
 
-    processInfo->exe = calloc(PATH_MAX , sizeof(char));
+    processInfo->exe = calloc(PATH_MAX, sizeof(char));
 
     return (readlink(pathName, processInfo->exe, PATH_MAX) == -1);
 }
@@ -157,7 +169,6 @@ int getProcessInfo(struct processInfo *processInfo)
     error = readCmdLine(processInfo);
 
     error |= readEnviron(processInfo);
-
 
     error |= readExe(processInfo);
 
@@ -203,13 +214,12 @@ int cleanProcessInfo(struct processInfo *processInfo)
 
     return 0;
 }
-int isProcess(struct dirent *proc_entry)
+int isProcess(struct dirent *_proc_entry)
 {
-    if (proc_entry->d_type != DT_DIR)
+    if (_proc_entry->d_type != DT_DIR)
     {
         return 0;
     }
 
-    return atoi(proc_entry->d_name);
+    return atoi(_proc_entry->d_name);
 }
-

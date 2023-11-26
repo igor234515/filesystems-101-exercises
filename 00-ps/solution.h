@@ -26,23 +26,3 @@ void report_process(pid_t pid, const char *exe, char **argv, char **envp);
    a file or a directory.
 */
 void report_error(const char *path, int errno_code);
-
-//additional
-#define envSIZE 128
-
-struct processInfo
-{
-    char *exe;
-    char **argv;
-    char **envp;
-    pid_t pid;
-    size_t argv_length;
-    size_t envp_length;
-};
-
-int readCmdLine(struct processInfo *processInfo);
-int readEnviron(struct processInfo *processInfo);
-int readExe(struct processInfo *processInfo);
-int getProcessInfo(struct processInfo *processInfo);
-int cleanProcessInfo(struct processInfo *processInfo);
-int isProcess(struct dirent *proc_entry);
