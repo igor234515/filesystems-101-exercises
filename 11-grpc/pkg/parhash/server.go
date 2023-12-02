@@ -2,9 +2,17 @@ package parhash
 
 import (
 	"context"
+	"fs101ex/pkg/workgroup"
+	"log"
+	"net"
+	"sync"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/semaphore"
+	"google.golang.org/grpc"
+
+	hashpb "fs101ex/pkg/gen/hashsvc"
+	parhashpb "fs101ex/pkg/gen/parhashsvc"
 )
 
 type Config struct {
@@ -36,9 +44,13 @@ type Config struct {
 // Make sure that the round-robin fanout works in that case too,
 // and evenly distributes the load across backends.
 type Server struct {
-	conf Config
-
-	sem *semaphore.Weighted
+	conf       Config
+	ID         int
+	listener   net.Listener
+	work_group sync.WaitGroup
+	mutex      sync.Mutex
+	stop       context.CancelFunc
+	sem        *semaphore.Weighted
 }
 
 func New(conf Config) *Server {
@@ -48,19 +60,92 @@ func New(conf Config) *Server {
 	}
 }
 
-func (s *Server) Start(ctx context.Context) (err error) {
-	defer func() { err = errors.Wrap(err, "Start()") }()
+func (s *Server) Start(ctx context.Context) (status error) {
+	defer func() { status = errors.Wrap(status, "Start()") }()
 
 	/* implement me */
+	ctx, s.stop = context.WithCancel(ctx)
+
+	s.listener, status = net.Listen("tcp", s.conf.ListenAddr)
+
+	if status != nil {
+		return status
+	}
+
+	server := grpc.NewServer()
+	parhashpb.RegisterParallelHashSvcServer(server, s)
+
+	s.work_group.Add(2)
+
+	go func() {
+		defer s.work_group.Done()
+		server.Serve(s.listener)
+	}()
+
+	go func() {
+		defer s.work_group.Done()
+		<-ctx.Done()
+		s.listener.Close()
+	}()
 
 	return nil
 }
 
 func (s *Server) ListenAddr() string {
-	/* implement me */
-	return ""
+	return s.listener.Addr().String()
 }
 
 func (s *Server) Stop() {
-	/* implement me */
+	s.stop()
+	s.work_group.Wait()
+}
+
+func (s *Server) ParallelHash(ctx context.Context, req *parhashpb.ParHashReq) (resp *parhashpb.ParHashResp, status error) {
+
+	var (
+		backends_number = len(s.conf.BackendAddrs)
+		clients         = make([]hashpb.HashSvcClient, backends_number)
+		connections     = make([]*grpc.ClientConn, backends_number)
+		hashes          = make([][]byte, len(req.Data))
+		work_group      = workgroup.New(workgroup.Config{Sem: s.sem})
+	)
+
+	for i := range connections {
+		connections[i], status = grpc.Dial(s.conf.BackendAddrs[i], grpc.WithInsecure() /* allow non-TLS connections */)
+
+		if status != nil {
+			log.Fatalf("Connection failed to %q: %v", s.conf.BackendAddrs[i], status)
+		}
+
+		defer connections[i].Close()
+		clients[i] = hashpb.NewHashSvcClient(connections[i])
+	}
+
+	for i := range req.Data {
+		var hs_num int = i
+		work_group.Go(ctx, func(ctx context.Context) error {
+
+			s.mutex.Lock()
+			back_num := s.ID
+			s.ID = (s.ID + 1) % backends_number
+			s.mutex.Unlock()
+
+			responce, status := clients[back_num].Hash(ctx, &hashpb.HashReq{Data: req.Data[hs_num]})
+			if status != nil {
+				return status
+			}
+
+			s.mutex.Lock()
+			hashes[hs_num] = responce.Hash
+			s.mutex.Unlock()
+
+			return nil
+		})
+	}
+
+	if status := work_group.Wait(); status != nil {
+		log.Fatalf("Hashing failed: %v", status)
+	}
+
+	return &parhashpb.ParHashResp{Hashes: hashes}, nil
 }
